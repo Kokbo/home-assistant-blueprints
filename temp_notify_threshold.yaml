@@ -2,7 +2,7 @@ blueprint:
   name: Notify when outside > inside and inside > threshold
   description: >
     Sends a notification when:
-    - Outside temperature exceeds the current indoor temperature
+    - Outside temperature exceeds indoor temperature
     - Indoor temperature exceeds a user-defined threshold
   domain: automation
   input:
@@ -22,7 +22,7 @@ blueprint:
 
     threshold_value:
       name: Temperature Threshold
-      description: Only notify if inside temperature is above this
+      description: Notify only if inside temp is above this
       default: 20.0
       selector:
         number:
@@ -34,7 +34,7 @@ blueprint:
 
     notify_service:
       name: Notification Service
-      description: Enter full notify service ID (e.g. notify.pushover)
+      description: Full notify service ID (e.g. notify.pushover)
       selector:
         text:
 
@@ -62,16 +62,16 @@ trigger:
 condition:
   - condition: template
     value_template: >
-      {% set indoor = states[inputs.indoor_sensor] | float %}
-      {% set outdoor = states[inputs.outdoor_sensor] | float %}
-      {% set threshold = inputs.threshold_value %}
+      {% set indoor = states[params.indoor_sensor] | float %}
+      {% set outdoor = states[params.outdoor_sensor] | float %}
+      {% set threshold = params.threshold_value %}
       {{ outdoor > indoor and indoor > threshold }}
 
 action:
   - variables:
-      indoor_temp: "{{ states[inputs.indoor_sensor] | float }}"
-      outdoor_temp: "{{ states[inputs.outdoor_sensor] | float }}"
-      threshold: "{{ inputs.threshold_value }}"
+      indoor_temp: "{{ states[params.indoor_sensor] | float }}"
+      outdoor_temp: "{{ states[params.outdoor_sensor] | float }}"
+      threshold: "{{ params.threshold_value }}"
       notify_service: !input notify_service
       message_title: !input message_title
       message_body: !input message_body
