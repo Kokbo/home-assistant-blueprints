@@ -1,52 +1,73 @@
 blueprint:
-  name: Notify when temperature exceeds threshold
+  name: Notify when outdoor temp > threshold and indoor == threshold
   description: >
-    Sends a notification when a temperature sensor exceeds the value defined in an input_number helper.
+    Sends a notification when:
+    - Outdoor temperature exceeds a threshold
+    - Indoor temperature equals the threshold
   domain: automation
   input:
-    temp_sensor:
-      name: Temperature Sensor
-      description: The sensor to monitor
+    indoor_sensor:
+      name: Indoor Temperature Sensor
       selector:
         entity:
           domain: sensor
           device_class: temperature
 
-    threshold_input:
-      name: Temperature Threshold
-      description: The input_number entity to use as a threshold
+    outdoor_sensor:
+      name: Outdoor Temperature Sensor
       selector:
         entity:
-          domain: input_number
+          domain: sensor
+          device_class: temperature
+
+    threshold_value:
+      name: Temperature Threshold
+      description: The target temperature value (°C)
+      default: 20.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.1
+          mode: box
+          unit_of_measurement: "°C"
 
     notify_service:
-      name: Notification Service ID
-      description: >
-        Enter the full service ID (e.g., `notify.pushover`)
+      name: Notification Service
+      description: Enter full service ID (e.g. notify.pushover)
       selector:
         text:
 
     message_title:
       name: Notification Title
-      description: Optional title for the message
-      default: "High Temperature Alert"
-    
+      default: "Indoor Equals Threshold, Outdoor Above"
+
     message_body:
-      name: Message Body
-      description: Optional body. Use {{ sensor }} and {{ threshold }} for values.
+      name: Notification Body
       default: >
-        🔥 Outside temperature is {{ sensor }}°C, above the threshold of {{ threshold }}°C!
+        🌡️ Outdoor is {{ outdoor_temp }}°C (> {{ threshold }}°C),
+        and indoor equals the threshold exactly ({{ indoor_temp }}°C).
 
 trigger:
-  - platform: numeric_state
-    entity_id: !input temp_sensor
-    above: !input threshold_input
+  - platform: template
+    value_template: >
+      {% set outside = states(!input outdoor_sensor) | float %}
+      {% set threshold = !input threshold_value %}
+      {{ outside > threshold }}
+
+condition:
+  - condition: template
+    value_template: >
+      {% set indoor = states(!input indoor_sensor) | float %}
+      {% set threshold = !input threshold_value %}
+      {{ indoor == threshold }}
 
 action:
   - variables:
-      sensor: "{{ states(temp_sensor) | float }}"
-      threshold: "{{ states(threshold_input) | float }}"
-  - service: "{{ notify_service }}"
+      indoor_temp: "{{ states(!input indoor_sensor) | float }}"
+      outdoor_temp: "{{ states(!input outdoor_sensor) | float }}"
+      threshold: !input threshold_value
+  - service: "{{ !input notify_service }}"
     data:
       title: !input message_title
       message: !input message_body
