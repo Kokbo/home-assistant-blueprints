@@ -1,0 +1,54 @@
+blueprint:
+  name: Notify when temperature exceeds threshold
+  description: >
+    Sends a notification when a temperature sensor exceeds the value defined in an input_number helper.
+  domain: automation
+  input:
+    temp_sensor:
+      name: Temperature Sensor
+      description: The sensor to monitor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    threshold_input:
+      name: Temperature Threshold
+      description: The input_number entity to use as a threshold
+      selector:
+        entity:
+          domain: input_number
+
+    notify_service:
+      name: Notify Service
+      description: The notification service (e.g., notify.pushover)
+      selector:
+        service:
+          domain: notify
+
+    message_title:
+      name: Notification Title
+      description: Optional title for the message
+      default: "High Temperature Alert"
+    
+    message_body:
+      name: Message Body
+      description: Optional body. Use {{ sensor }} and {{ threshold }} for values.
+      default: >
+        🔥 Outside temperature is {{ sensor }}°C, above the threshold of {{ threshold }}°C!
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input temp_sensor
+    above: !input threshold_input
+
+action:
+  - variables:
+      sensor: "{{ states(temp_sensor) | float }}"
+      threshold: "{{ states(threshold_input) | float }}"
+  - service: !input notify_service
+    data:
+      title: !input message_title
+      message: !input message_body
+
+mode: single
