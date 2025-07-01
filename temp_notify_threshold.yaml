@@ -40,13 +40,13 @@ blueprint:
 
     message_title:
       name: Notification Title
-      default: "Open a window? Outside cooler than inside"
+      default: "Indoor warmer than threshold, outdoor now warmer"
 
     message_body:
       name: Notification Body
       default: >
-        🌬️ Outdoor temperature ({{ outdoor_temp }}°C) is now higher than indoor ({{ indoor_temp }}°C),
-        and indoor is above your threshold ({{ threshold }}°C)
+        🌡️ Outdoor is {{ outdoor_temp }}°C > indoor ({{ indoor_temp }}°C),
+        and indoor > threshold ({{ threshold }}°C)
 
 trigger:
   - platform: state
@@ -72,9 +72,13 @@ action:
       indoor_temp: "{{ states(!input indoor_sensor) | float }}"
       outdoor_temp: "{{ states(!input outdoor_sensor) | float }}"
       threshold: !input threshold_value
-  - service: "{{ !input.notify_service }}"
+      notify_service: !input notify_service
+      message_title: !input message_title
+      message_body: !input message_body
+
+  - service: "{{ notify_service }}"
     data:
-      title: !input.message_title
-      message: !input.message_body
+      title: "{{ message_title }}"
+      message: "{{ message_body }}"
 
 mode: single
