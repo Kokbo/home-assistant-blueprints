@@ -20,8 +20,9 @@ blueprint:
           domain: input_number
 
     notify_service:
-      name: Notify Service (e.g., notify.pushover)
-      description: Enter the full notify service ID (e.g., notify.pushover)
+      name: Notification Service ID
+      description: >
+        Enter the full service ID (e.g., `notify.pushover`)
       selector:
         text:
 
@@ -45,7 +46,7 @@ action:
   - variables:
       sensor: "{{ states(temp_sensor) | float }}"
       threshold: "{{ states(threshold_input) | float }}"
-  - service: "{{ iif(notify_service is string, 'notify.persistent_notification', notify_service) }}"
+  - service: "{{ notify_service }}"
     data:
       title: !input message_title
       message: !input message_body
