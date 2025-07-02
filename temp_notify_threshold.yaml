@@ -1,9 +1,9 @@
 blueprint:
-  name: Notify when outside > inside and inside > threshold
+  name: Notify when outdoor > indoor and indoor > threshold
   description: >
     Sends a notification when:
-    - Outside temperature exceeds indoor temperature
-    - Indoor temperature exceeds a user-defined threshold
+    - Outdoor temperature is higher than indoor
+    - Indoor temperature is above a set threshold
   domain: automation
   input:
     indoor_sensor:
@@ -22,7 +22,7 @@ blueprint:
 
     threshold_value:
       name: Temperature Threshold
-      description: Notify only if inside temp is above this
+      description: Notify only if indoor is above this temperature
       default: 20.0
       selector:
         number:
@@ -34,51 +34,42 @@ blueprint:
 
     notify_service:
       name: Notification Service
-      description: Full notify service ID (e.g. notify.pushover)
+      description: Enter full service ID (e.g. notify.pushover)
       selector:
         text:
 
     message_title:
       name: Notification Title
-      default: "Indoor warmer than threshold, outdoor now warmer"
+      default: "Indoor temp above threshold, outdoor now warmer"
 
     message_body:
       name: Notification Body
       default: >
-        🌡️ Outdoor is {{ outdoor_temp }}°C > indoor ({{ indoor_temp }}°C),
+        🌡️ Outdoor ({{ outdoor_temp }}°C) > indoor ({{ indoor_temp }}°C),
         and indoor > threshold ({{ threshold }}°C)
 
 trigger:
   - platform: state
-    entity_id: !input outdoor_sensor
-
+    entity_id: !input indoor_sensor
   - platform: state
-    entity_id: !input indoor_sensor
-
-  - platform: numeric_state
-    entity_id: !input indoor_sensor
-    above: !input threshold_value
+    entity_id: !input outdoor_sensor
 
 condition:
   - condition: template
     value_template: >
-      {% set indoor = states[params.indoor_sensor] | float %}
-      {% set outdoor = states[params.outdoor_sensor] | float %}
-      {% set threshold = params.threshold_value %}
+      {% set indoor = states[states('!input indoor_sensor')] | float %}
+      {% set outdoor = states[states('!input outdoor_sensor')] | float %}
+      {% set threshold = !input threshold_value %}
       {{ outdoor > indoor and indoor > threshold }}
 
 action:
   - variables:
-      indoor_temp: "{{ states[params.indoor_sensor] | float }}"
-      outdoor_temp: "{{ states[params.outdoor_sensor] | float }}"
-      threshold: "{{ params.threshold_value }}"
-      notify_service: !input notify_service
-      message_title: !input message_title
-      message_body: !input message_body
-
-  - service: "{{ notify_service }}"
+      indoor_temp: "{{ states(!input indoor_sensor) | float }}"
+      outdoor_temp: "{{ states(!input outdoor_sensor) | float }}"
+      threshold: !input threshold_value
+  - service: !input notify_service
     data:
-      title: "{{ message_title }}"
-      message: "{{ message_body }}"
+      title: !input message_title
+      message: !input message_body
 
 mode: single
