@@ -57,16 +57,18 @@ trigger:
 condition:
   - condition: template
     value_template: >
-      {% set indoor = states[states('!input indoor_sensor')] | float %}
-      {% set outdoor = states[states('!input outdoor_sensor')] | float %}
-      {% set threshold = !input threshold_value %}
+      {% set indoor = states[inputs.indoor_entity] | float %}
+      {% set outdoor = states[inputs.outdoor_entity] | float %}
+      {% set threshold = inputs.threshold %}
       {{ outdoor > indoor and indoor > threshold }}
 
 action:
   - variables:
-      indoor_temp: "{{ states(!input indoor_sensor) | float }}"
-      outdoor_temp: "{{ states(!input outdoor_sensor) | float }}"
+      indoor_entity: !input indoor_sensor
+      outdoor_entity: !input outdoor_sensor
       threshold: !input threshold_value
+      indoor_temp: "{{ states[indoor_entity] | float }}"
+      outdoor_temp: "{{ states[outdoor_entity] | float }}"
   - service: !input notify_service
     data:
       title: !input message_title
